@@ -1,0 +1,243 @@
+{% extends "admin/layout.html" %}
+{% block content %}
+<div class="container-fluid">
+  <!-- Header Section -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1 text-dark">
+        <i class="bi bi-menu-button me-2 text-primary"></i>
+        Manajemen Menu
+      </h2>
+      <p class="text-muted small">Kelola daftar menu makanan dan minuman restoran</p>
+    </div>
+    <a href="{{ url_for('menu_tambah') }}" class="btn btn-primary px-4">
+      <i class="bi bi-plus-lg me-2"></i>Tambah Baru
+    </a>
+  </div>
+
+  <!-- Stats Cards Row -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card stat-card bg-primary bg-opacity-10 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="text-uppercase text-muted small mb-1">Total Menu</h6>
+              <h3 class="mb-0 fw-bold">{{ menus|length if menus else 0 }}</h3>
+            </div>
+            <div class="icon-circle bg-primary text-white">
+              <i class="bi bi-bookmark-star"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card bg-success bg-opacity-10 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="text-uppercase text-muted small mb-1">Makanan</h6>
+              <h3 class="mb-0 fw-bold">
+                {% if menus %}
+                  {{ menus|selectattr('2', 'equalto', 'makanan')|list|length }}
+                {% else %}0{% endif %}
+              </h3>
+            </div>
+            <div class="icon-circle bg-success text-white">
+              <i class="bi bi-egg-fried"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card bg-info bg-opacity-10 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="text-uppercase text-muted small mb-1">Minuman</h6>
+              <h3 class="mb-0 fw-bold">
+                {% if menus %}
+                  {{ menus|selectattr('2', 'equalto', 'minuman')|list|length }}
+                {% else %}0{% endif %}
+              </h3>
+            </div>
+            <div class="icon-circle bg-info text-white">
+              <i class="bi bi-cup-straw"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card bg-warning bg-opacity-10 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="text-uppercase text-muted small mb-1">Rata-rata Harga</h6>
+              <h3 class="mb-0 fw-bold">
+                Rp {% if menus %}
+                  {{ "{:,.0f}".format(menus|map(attribute=3)|sum / menus|length) }}
+                {% else %}0{% endif %}
+              </h3>
+            </div>
+            <div class="icon-circle bg-warning text-white">
+              <i class="bi bi-tag"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Card -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th width="50px" class="text-center">No</th>
+              <th>Nama Menu</th>
+              <th width="120px" class="text-center">Kategori</th>
+              <th width="150px" class="text-end">Harga</th>
+              <th width="180px" class="text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if menus %}
+              {% for menu in menus %}
+              <tr>
+                <td class="text-center text-muted">{{ loop.index }}</td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0 me-3">
+                      <div class="menu-icon bg-light rounded-circle p-2">
+                        <i class="bi {% if menu[2] == 'makanan' %}bi-egg-fried text-success
+                          {% else %}bi-cup-straw text-info{% endif %}"></i>
+                      </div>
+                    </div>
+                    <div class="flex-grow-1">
+                      <h6 class="mb-0 fw-bold">{{ menu[1] }}</h6>
+                      <small class="text-muted">ID: {{ menu[0] }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span class="badge rounded-pill py-1 px-3 
+                    {% if menu[2] == 'makanan' %}bg-success bg-opacity-10 text-success
+                    {% else %}bg-info bg-opacity-10 text-info{% endif %}">
+                    {{ menu[2]|capitalize }}
+                  </span>
+                </td>
+                <td class="text-end fw-bold">Rp {{ "{:,}".format(menu[3]) }}</td>
+                <td class="text-center">
+                  <div class="btn-group btn-group-sm" role="group">
+                    <a href="{{ url_for('menu_edit', id=menu[0]) }}" 
+                       class="btn btn-outline-primary px-3">
+                      <i class="bi bi-pencil me-1"></i>Edit
+                    </a>
+                    <button type="button" class="btn btn-outline-danger px-3" 
+                      data-bs-toggle="modal" data-bs-target="#deleteModal{{ menu[0] }}">
+                      <i class="bi bi-trash me-1"></i>Hapus
+                    </button>
+                  </div>
+                  
+                  <!-- Delete Confirmation Modal -->
+                  <div class="modal fade" id="deleteModal{{ menu[0] }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content">
+                        <div class="modal-header border-0">
+                          <h5 class="modal-title fw-bold">Konfirmasi Hapus</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <p>Apakah Anda yakin ingin menghapus menu <strong>{{ menu[1] }}</strong>?</p>
+                          <p class="small text-muted">Data yang dihapus tidak dapat dikembalikan.</p>
+                        </div>
+                        <div class="modal-footer border-0">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                          <form action="{{ url_for('menu_hapus', id=menu[0]) }}" method="POST">
+                            <button type="submit" class="btn btn-danger">Ya, Hapus</button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center py-5">
+                  <div class="py-4 text-muted">
+                    <i class="bi bi-menu-button" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <h5 class="mt-3 mb-2">Belum Ada Menu</h5>
+                    <p class="mb-0">Mulai dengan menambahkan menu baru</p>
+                    <a href="{{ url_for('menu_tambah') }}" class="btn btn-primary mt-3 px-4">
+                      <i class="bi bi-plus-lg me-1"></i>Tambah Menu
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .stat-card {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-3px);
+  }
+  .icon-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .menu-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .table th {
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    border-bottom: 2px solid #f0f0f0;
+  }
+  .table td {
+    vertical-align: middle;
+    padding: 1rem 0.75rem;
+    border-color: #f8f9fa;
+  }
+  .table-hover tbody tr:hover {
+    background-color: #f8fafc;
+  }
+  .badge {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .btn {
+    border-radius: 8px;
+    font-weight: 500;
+  }
+  .btn-sm {
+    padding: 0.35rem 0.75rem;
+  }
+</style>
+{% endblock %}
