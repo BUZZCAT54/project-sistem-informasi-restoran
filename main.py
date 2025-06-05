@@ -308,21 +308,43 @@ def menu_edit(id):
 # Hapus menu
 @app.route('/admin/menu/hapus/<int:id>', methods=['POST'])
 def menu_hapus(id):
-    if not admin_required():
+    if 'role' not in session or session['role'] != 'admin':
+        flash('Akses ditolak', 'danger')
         return redirect(url_for('login'))
 
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) FROM pesanan WHERE id_menu = %s", (id,))
-    jumlah_pesanan = cur.fetchone()[0]
-
-    if jumlah_pesanan > 0:
-        flash('Menu tidak bisa dihapus karena sudah digunakan dalam pesanan.', 'danger')
-    else:
+    try:
+        cur = mysql.connection.cursor()
+        
+        # 1. Cek apakah menu ada
+        cur.execute("SELECT nama FROM menu WHERE id = %s", (id,))
+        menu = cur.fetchone()
+        if not menu:
+            flash('Menu tidak ditemukan!', 'danger')
+            return redirect(url_for('menu_list'))
+        
+        menu_name = menu[0]
+        
+        # 2. Cek dependensi pesanan
+        cur.execute("SELECT COUNT(*) FROM pesanan WHERE id_menu = %s", (id,))
+        if cur.fetchone()[0] > 0:
+            flash(f'Menu "{menu_name}" tidak bisa dihapus karena ada pesanan terkait', 'warning')
+            return redirect(url_for('menu_list'))
+        
+        # 3. Eksekusi penghapusan
         cur.execute("DELETE FROM menu WHERE id = %s", (id,))
         mysql.connection.commit()
-        flash('Menu berhasil dihapus!', 'success')
-
-    cur.close()
+        
+        flash(f'Menu "{menu_name}" berhasil dihapus!', 'success')
+        
+    except Exception as e:
+        mysql.connection.rollback()
+        app.logger.error(f'Gagal hapus menu: {str(e)}')
+        flash(f'Gagal menghapus menu. Error: {str(e)}', 'danger')
+        
+    finally:
+        if cur:
+            cur.close()
+    
     return redirect(url_for('menu_list'))
 
 # Daftar pelanggan (role = 'pelanggan' saja)
